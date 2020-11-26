@@ -23,11 +23,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="9f65791c-0658-4807-983d-768afb58345a" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/jsLibraryMappings.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/functions/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/functions/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/functions/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/functions/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/functions/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/functions/package.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -67,7 +64,10 @@
       <updated>1605806825406</updated>
       <workItem from="1605806826716" duration="3691000" />
       <workItem from="1605832370424" duration="811000" />
-      <workItem from="1605863224814" duration="13117000" />
+      <workItem from="1605863224814" duration="13441000" />
+      <workItem from="1606166692584" duration="4471000" />
+      <workItem from="1606199679345" duration="499000" />
+      <workItem from="1606388156278" duration="4209000" />
     </task>
     <servers />
   </component>
@@ -84,6 +84,7 @@
         </entry>
       </map>
     </option>
+    <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="WindowStateProjectService">
     <state x="812" y="336" key="SettingsEditor" timestamp="1605866605059">
