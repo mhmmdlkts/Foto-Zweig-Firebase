@@ -26,6 +26,16 @@ exports.updatePeople = functions.region('europe-west1').https.onRequest(updatePe
 exports.getAllInstitutions = functions.region('europe-west1').https.onRequest(getAllInstitutions);
 exports.updateInstitution = functions.region('europe-west1').https.onRequest(updateInstitution);
 
+exports.getAllRightOwners = functions.region('europe-west1').https.onRequest(getAllRightOwners);
+exports.updateRightOwner = functions.region('europe-west1').https.onRequest(updateRightOwner);
+
+exports.getAllSubtypes = functions.region('europe-west1').https.onRequest(getAllSubtypes);
+exports.updateSubtypes = functions.region('europe-west1').https.onRequest(updateSubtypes);
+
+exports.removeKeyword = functions.region('europe-west1').https.onRequest(removeKeyword);
+
+exports.edit = functions.region('europe-west1').https.onRequest(editImage);
+exports.delete = functions.region('europe-west1').https.onRequest(deleteImage);
 exports.upload = functions.runWith({timeoutSeconds: 300, memory: '2GB'}).region('europe-west1').https.onRequest(uploadImage);
 
 async function generateThumbnail (key, originalUrl) {
@@ -92,38 +102,59 @@ async function createNewKey (request, response)  {
 
 async function getAllPeoples (request, response)  {
     response.set("Access-Control-Allow-Origin", "*");
-    const all = (await db.ref("peoples").once("value")).val();
+    let all = (await db.ref("peoples").once("value")).val();
+    if (all === null) all = {}
     response.status(200).send(JSON.stringify(all));
 }
 
 async function getAllInstitutions (request, response)  {
     response.set("Access-Control-Allow-Origin", "*");
-    const all = (await db.ref("institutions").once("value")).val();
+    let all = (await db.ref("institutions").once("value")).val();
+    if (all === null) all = {}
+    response.status(200).send(JSON.stringify(all));
+}
+
+async function getAllRightOwners (request, response)  {
+    response.set("Access-Control-Allow-Origin", "*");
+    let all = (await db.ref("rightOwners").once("value")).val();
+    if (all === null) all = {}
+    response.status(200).send(JSON.stringify(all));
+}
+
+async function getAllSubtypes (request, response)  {
+    response.set("Access-Control-Allow-Origin", "*");
+    let all = (await db.ref("itemSubtypes").once("value")).val();
+    if (all === null) all = {}
     response.status(200).send(JSON.stringify(all));
 }
 
 async function getAllTags (request, response)  {
     response.set("Access-Control-Allow-Origin", "*");
-    const all = (await db.ref("tags").once("value")).val();
+    let all = (await db.ref("tags").once("value")).val();
+    if (all === null) all = {}
     response.status(200).send(JSON.stringify(all));
 }
 
 async function getAllLocations (request, response)  {
     response.set("Access-Control-Allow-Origin", "*");
-    const all = (await db.ref("locations").once("value")).val();
+    let all = (await db.ref("locations").once("value")).val();
+    if (all === null) all = {}
     response.status(200).send(JSON.stringify(all));
 }
 
 async function getAllFotos (request, response)  {
     response.set("Access-Control-Allow-Origin", "*");
-    const all = (await db.ref("fotos").once("value")).val();
-
+    let all = (await db.ref("fotos").once("value")).val();
+    if (all === null) all = {};
     if (!(await checkIsAdmin(request.query.uid))) {
         for (const entry of Object.keys(all)) {
-            delete all[entry].urls.original;
+            try {
+                delete all[entry].urls.original;
+            } catch (e) {
+                console.error(e);
+            }
         }
     }
-
     response.status(200).send(JSON.stringify(all));
 }
 
@@ -131,13 +162,28 @@ async function checkIsAdmin(uid) {
     return uid !== null && uid !== undefined; // TODO
 }
 
+async function editImage (request, response)  {
+    response.set("Access-Control-Allow-Origin", "*");
+    const foto = JSON.parse(decodeURI(request.query.foto));
+    const key = request.query.key;
+    await db.ref("fotos").child(key).update(foto);
+    response.status(200).send();
+}
+
+async function deleteImage (request, response)  {
+    response.set("Access-Control-Allow-Origin", "*");
+    const key = request.query.key;
+    await db.ref("fotos").child(key).remove();
+    response.status(200).send();
+}
+
 async function uploadImage (request, response)  {
     response.set("Access-Control-Allow-Origin", "*");
     const foto = JSON.parse(decodeURI(request.query.foto));
     const url = decodeURI(request.query.url);
     const key = request.query.key;
-    foto.id = key;
     foto.urls = await generateThumbnail(key, url);
+    foto.isPublic = true;
     await db.ref("fotos").child(key).set(foto);
     response.status(200).send({id:key});
 }
@@ -145,35 +191,61 @@ async function uploadImage (request, response)  {
 async function updatePeople (request, response)  {
     response.set("Access-Control-Allow-Origin", "*");
     const people = JSON.parse(decodeURI(request.query.people));
-    const key = people.key!==undefined?people.key:db.ref("peoples").push().key;
+    const key = people.key!==null?people.key:db.ref("peoples").push().key;
     delete people.key;
     await db.ref("peoples").child(key).set(people);
-    response.status(200).send();
+    response.status(200).send({'key':key});
 }
 
 async function updateInstitution (request, response)  {
     response.set("Access-Control-Allow-Origin", "*");
     const institution = JSON.parse(decodeURI(request.query.institution));
-    const key = institution.key!==undefined?institution.key:db.ref("institutions").push().key;
+    const key = institution.key!==null?institution.key:db.ref("institutions").push().key;
     delete institution.key;
     await db.ref("institutions").child(key).set(institution);
-    response.status(200).send();
+    response.status(200).send({'key':key});
+}
+
+async function updateRightOwner (request, response)  {
+    response.set("Access-Control-Allow-Origin", "*");
+    const institution = JSON.parse(decodeURI(request.query.rightOwner));
+    const key = institution.key!==null?institution.key:db.ref("rightOwners").push().key;
+    delete institution.key;
+    await db.ref("rightOwners").child(key).set(institution);
+    response.status(200).send({'key':key});
+}
+
+async function updateSubtypes (request, response)  {
+    response.set("Access-Control-Allow-Origin", "*");
+    const itemSubtype = JSON.parse(decodeURI(request.query.itemSubtype));
+    const key = itemSubtype.key!==null?itemSubtype.key:db.ref("itemSubtypes").push().key;
+    delete itemSubtype.key;
+    await db.ref("itemSubtypes").child(key).set(itemSubtype);
+    response.status(200).send({'key':key});
 }
 
 async function updateTag (request, response)  {
     response.set("Access-Control-Allow-Origin", "*");
     const tag = JSON.parse(decodeURI(request.query.tag));
-    const key = tag.key!==undefined?tag.key:db.ref("tags").push().key;
+    const key = tag.key!==null?tag.key:db.ref("tags").push().key;
     delete tag.key;
     await db.ref("tags").child(key).set(tag);
-    response.status(200).send();
+    response.status(200).send({'key':key});
 }
 
 async function updateLocation (request, response)  {
     response.set("Access-Control-Allow-Origin", "*");
     const location = JSON.parse(decodeURI(request.query.location));
-    const key = location.key!==undefined?location.key:db.ref("locations").push().key;
+    const key = location.key!==null?location.key:db.ref("locations").push().key;
     delete location.key;
     await db.ref("locations").child(key).set(location);
+    response.status(200).send({'key':key});
+}
+
+async function removeKeyword (request, response)  {
+    response.set("Access-Control-Allow-Origin", "*");
+    const keyword = request.query.keyword;
+    const key = request.query.key;
+    await db.ref(keyword).child(key).remove();
     response.status(200).send();
 }
