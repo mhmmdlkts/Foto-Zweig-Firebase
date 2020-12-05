@@ -13,6 +13,7 @@ const Jimp = require('jimp');
 
 exports.getNotExistingFotoKey = functions.region('europe-west1').https.onRequest(createNewKey);
 exports.getAllFotos = functions.region('europe-west1').https.onRequest(getAllFotos);
+exports.getLogs = functions.region('europe-west1').https.onRequest(getLogs);
 
 exports.getAllLocations = functions.region('europe-west1').https.onRequest(getAllLocations);
 exports.updateLocation = functions.region('europe-west1').https.onRequest(updateLocation);
@@ -142,6 +143,13 @@ async function getAllLocations (request, response)  {
     response.status(200).send(JSON.stringify(all));
 }
 
+async function getLogs (request, response)  {
+    response.set("Access-Control-Allow-Origin", "*");
+    let log = (await db.ref("logs").child(request.query.key).once("value")).val();
+    if (log === null) log = {};
+    response.status(200).send(JSON.stringify(log));
+}
+
 async function getAllFotos (request, response)  {
     response.set("Access-Control-Allow-Origin", "*");
     let all = (await db.ref("fotos").once("value")).val();
@@ -167,6 +175,7 @@ async function editImage (request, response)  {
     const foto = JSON.parse(decodeURI(request.query.foto));
     const key = request.query.key;
     await db.ref("fotos").child(key).update(foto);
+    await writeLogs("user1", key, foto);
     response.status(200).send();
 }
 
@@ -174,6 +183,7 @@ async function deleteImage (request, response)  {
     response.set("Access-Control-Allow-Origin", "*");
     const key = request.query.key;
     await db.ref("fotos").child(key).remove();
+    db.ref("logs").child(key).remove();
     response.status(200).send();
 }
 
@@ -185,7 +195,64 @@ async function uploadImage (request, response)  {
     foto.urls = await generateThumbnail(key, url);
     foto.isPublic = true;
     await db.ref("fotos").child(key).set(foto);
+    await writeLogs("user1", key, foto);
     response.status(200).send({id:key});
+}
+
+async function writeLogs(userId, key, foto) {
+    const timeStamp = (new Date()).toISOString();
+    writeLog(userId, key, foto, timeStamp, "annotation");
+    writeLog(userId, key, foto, timeStamp, "creator");
+    writeLog(userId, key, foto, timeStamp, "description");
+    writeLog(userId, key, foto, timeStamp, "institution");
+    writeLog(userId, key, foto, timeStamp, "isPublic");
+    writeLog(userId, key, foto, timeStamp, "itemSubtype");
+    writeLog(userId, key, foto, timeStamp, "location");
+    writeLog(userId, key, foto, timeStamp, "photographedPeople");
+    writeLog(userId, key, foto, timeStamp, "rightOwner");
+    writeLog(userId, key, foto, timeStamp, "shortDescription");
+    writeLog(userId, key, foto, timeStamp, "tags");
+}
+
+async function writeLog(userId, key, foto, timeStamp, property) {
+    if (foto[property] !== undefined) {
+        db.ref("logs").child(key).child(property).transaction((value) => {
+            const createdObj = createLogObj(userId, timeStamp, foto[property]);
+            if (value === null) {
+                return [createdObj];
+            }
+            const lastVal = value[value.length - 1] ;
+            if (isSameLog(lastVal, createdObj))
+                return;
+            value.push(createdObj)
+            return value;
+        });
+    }
+}
+
+function isSameLog(log1, log2) {
+    const val1 = log1.val;
+    const val2 = log2.val;
+    if (typeof val1 === "string" && typeof val2 === "string")
+        return val1 === val2;
+    if (typeof log1 === "boolean" && typeof log2 === "boolean")
+        return log1 === log2;
+    if (typeof val1 !== "object" && typeof val2 !== "object")
+        return false;
+    if (val1.length !== val2.length)
+        return false;
+    for (let i = 0; i < val1.length; i++)
+        if (val1[i] !== val2[i])
+            return false;
+    return true;
+}
+
+function createLogObj(userId, time, obj) {
+    return {
+        user: userId,
+        time: time,
+        val: obj
+    }
 }
 
 async function updatePeople (request, response)  {
