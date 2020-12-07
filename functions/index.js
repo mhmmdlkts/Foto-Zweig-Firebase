@@ -11,6 +11,9 @@ const UUID = require("uuid-v4");
 const db = admin.database();
 const Jimp = require('jimp');
 
+exports.logIn = functions.region('europe-west1').https.onRequest(logIn);
+exports.signIn = functions.region('europe-west1').https.onRequest(signIn);
+
 exports.getNotExistingFotoKey = functions.region('europe-west1').https.onRequest(createNewKey);
 exports.getAllFotos = functions.region('europe-west1').https.onRequest(getAllFotos);
 exports.getLogs = functions.region('europe-west1').https.onRequest(getLogs);
@@ -94,6 +97,16 @@ async function generateThumbnail (key, originalUrl) {
     fs.unlinkSync(tempFilePath);
     fs.unlinkSync(tempLogoPath);
     return urls;
+}
+
+async function signIn (request, response)  {
+    response.set("Access-Control-Allow-Origin", "*");
+
+}
+
+async function logIn (request, response)  {
+    response.set("Access-Control-Allow-Origin", "*");
+
 }
 
 async function createNewKey (request, response)  {
