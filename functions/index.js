@@ -10,6 +10,7 @@ const fs = require('fs');
 const UUID = require("uuid-v4");
 const db = admin.database();
 const Jimp = require('jimp');
+const crypto = require('crypto');
 
 exports.logIn = functions.region('europe-west1').https.onRequest(logIn);
 exports.signIn = functions.region('europe-west1').https.onRequest(signIn);
@@ -99,9 +100,37 @@ async function generateThumbnail (key, originalUrl) {
     return urls;
 }
 
-async function signIn (request, response)  {
+async function signIn (request, response) {
     response.set("Access-Control-Allow-Origin", "*");
 
+    const name = decodeURI(request.query.name);
+    const email = decodeURI(request.query.email);
+    const password = decodeURI(request.query.pwd);
+
+    const key = crypto.createHash('sha256').update(email).digest('hex');
+
+    let obj = {
+        error: null,
+        uid: key,
+        name: name,
+        email: email,
+        password: password,
+        mode: 0
+    };
+
+    if (name !== "undefined") {
+        await db.ref("users").child(key).set(obj);
+    } else {
+        const val = (await db.ref("users").child(key).once("value")).val()
+        if (val === null || val.password !== password)
+            obj.error = 300 // Access denied
+        else {
+            obj.mode = val.mode
+            obj.name = val.name
+        }
+    }
+
+    response.status(200).send(obj);
 }
 
 async function logIn (request, response)  {
@@ -187,8 +216,9 @@ async function editImage (request, response)  {
     response.set("Access-Control-Allow-Origin", "*");
     const foto = JSON.parse(decodeURI(request.query.foto));
     const key = request.query.key;
+    const userName = request.query.userName;
     await db.ref("fotos").child(key).update(foto);
-    await writeLogs("user1", key, foto);
+    await writeLogs(userName, key, foto);
     response.status(200).send();
 }
 
@@ -205,10 +235,11 @@ async function uploadImage (request, response)  {
     const foto = JSON.parse(decodeURI(request.query.foto));
     const url = decodeURI(request.query.url);
     const key = request.query.key;
+    const userName = request.query.userName;
     foto.urls = await generateThumbnail(key, url);
     foto.isPublic = true;
     await db.ref("fotos").child(key).set(foto);
-    await writeLogs("user1", key, foto);
+    await writeLogs(userName, key, foto);
     response.status(200).send({id:key});
 }
 
