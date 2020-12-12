@@ -34,14 +34,17 @@ exports.updateInstitution = functions.region('europe-west1').https.onRequest(upd
 exports.getAllRightOwners = functions.region('europe-west1').https.onRequest(getAllRightOwners);
 exports.updateRightOwner = functions.region('europe-west1').https.onRequest(updateRightOwner);
 
+exports.getAllRightOwners = functions.region('europe-west1').https.onRequest(getAllRightOwners);
+exports.updateRightOwner = functions.region('europe-west1').https.onRequest(updateRightOwner);
+
 exports.getAllSubtypes = functions.region('europe-west1').https.onRequest(getAllSubtypes);
 exports.updateSubtypes = functions.region('europe-west1').https.onRequest(updateSubtypes);
-
-exports.removeKeyword = functions.region('europe-west1').https.onRequest(removeKeyword);
 
 exports.edit = functions.region('europe-west1').https.onRequest(editImage);
 exports.delete = functions.region('europe-west1').https.onRequest(deleteImage);
 exports.upload = functions.runWith({timeoutSeconds: 300, memory: '2GB'}).region('europe-west1').https.onRequest(uploadImage);
+
+exports.countKeyword = functions.region('europe-west1').https.onRequest(countKeyword);
 
 async function generateThumbnail (key, originalUrl) {
     const fileBucket = "foto-zweig-312d2.appspot.com";
@@ -283,6 +286,10 @@ function isSameLog(log1, log2) {
         return log1 === log2;
     if (typeof val1 !== "object" && typeof val2 !== "object")
         return false;
+    if (val1 === undefined && val2 === undefined)
+        return true;
+    if (val1 === undefined || val2 === undefined)
+        return false;
     if (val1.length !== val2.length)
         return false;
     for (let i = 0; i < val1.length; i++)
@@ -359,4 +366,13 @@ async function removeKeyword (request, response)  {
     const key = request.query.key;
     await db.ref(keyword).child(key).remove();
     response.status(200).send();
+}
+
+async function countKeyword (request, response)  {
+    response.set("Access-Control-Allow-Origin", "*");
+    const key = request.query.key;
+    const all = (await db.ref("fotos").once("value")).val();
+
+    const count = (JSON.stringify(all).match(new RegExp(key,"g"))).length;
+    response.status(200).send({'count': count});
 }
