@@ -107,7 +107,7 @@ async function signIn (request, response) {
     response.set("Access-Control-Allow-Origin", "*");
 
     const name = decodeURI(request.query.name);
-    const email = decodeURI(request.query.email);
+    const email = decodeURI(request.query.email).toLowerCase();
     const password = decodeURI(request.query.pwd);
 
     const key = crypto.createHash('sha256').update(email).digest('hex');
@@ -373,6 +373,9 @@ async function countKeyword (request, response)  {
     const key = request.query.key;
     const all = (await db.ref("fotos").once("value")).val();
 
-    const count = (JSON.stringify(all).match(new RegExp(key,"g"))).length;
+    const matches = JSON.stringify(all).match(new RegExp(key,"g"));
+    let count = 0;
+    if (matches !== null)
+        count = matches.length;
     response.status(200).send({'count': count});
 }
